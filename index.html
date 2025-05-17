@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>Pong</title>
+    <link rel="icon" href="data:,">
     <style>
       canvas {
         border: 2px solid white;
@@ -47,7 +48,7 @@
   </head>
   <body>
     <div id="score">0 - 0</div>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <canvas id="gameCanvas" width="1200" height="800"></canvas>
     <button id="startButton">Start Game</button>
     <div id="controls">
       Left Player: W (up) and S (down)<br />
@@ -81,6 +82,12 @@
 
           const keys = new Set();
           document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+              gameRunning = !gameRunning;
+              startButton.style.display = gameRunning ? "none" : "block";
+              startButton.textContent = gameRunning ? "Start Game" : "Resume Game";
+              return;
+            }
             if (!gameRunning) return;
             keys.add(e.key);
           });
@@ -102,6 +109,15 @@
 
           function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw center line
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = "white";
+            ctx.stroke();
+            ctx.setLineDash([]);
 
             ctx.fillStyle = "white";
             ctx.fillRect(20, getLeftPaddleY(), 10, 100);
