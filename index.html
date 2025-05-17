@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Pong</title>
+    <style>
+      canvas {
+        border: 2px solid white;
+        background: black;
+      }
+      body {
+        background: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        font-family: Arial, sans-serif;
+        color: white;
+      }
+      #score {
+        position: absolute;
+        top: 20px;
+        font-size: 24px;
+      }
+      #controls {
+        position: absolute;
+        bottom: 20px;
+        text-align: center;
+      }
+      #startButton {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 10px 20px;
+        font-size: 20px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #startButton:hover {
+        background: #45a049;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="score">0 - 0</div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <button id="startButton">Start Game</button>
+    <div id="controls">
+      Left Player: W (up) and S (down)<br />
+      Right Player: Arrow Up and Arrow Down
+    </div>
+    <script>
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const scoreDiv = document.getElementById("score");
+      const startButton = document.getElementById("startButton");
+      let gameRunning = false;
+
+      WebAssembly.instantiateStreaming(fetch("pong.wasm"), {})
+        .then((obj) => {
+          const {
+            init,
+            update,
+            getLeftPaddleY,
+            getRightPaddleY,
+            getBallX,
+            getBallY,
+            getLeftScore,
+            getRightScore,
+            moveLeftPaddleUp,
+            moveLeftPaddleDown,
+            moveRightPaddleUp,
+            moveRightPaddleDown,
+          } = obj.instance.exports;
+
+          init(canvas.width, canvas.height);
+
+          const keys = new Set();
+          document.addEventListener("keydown", (e) => {
+            if (!gameRunning) return;
+            keys.add(e.key);
+          });
+          document.addEventListener("keyup", (e) => {
+            keys.delete(e.key);
+          });
+
+          function gameLoop() {
+            if (gameRunning) {
+              update();
+              if (keys.has("w")) moveLeftPaddleUp();
+              if (keys.has("s")) moveLeftPaddleDown();
+              if (keys.has("ArrowUp")) moveRightPaddleUp();
+              if (keys.has("ArrowDown")) moveRightPaddleDown();
+            }
+            draw();
+            requestAnimationFrame(gameLoop);
+          }
+
+          function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "white";
+            ctx.fillRect(20, getLeftPaddleY(), 10, 100);
+            ctx.fillRect(canvas.width - 30, getRightPaddleY(), 10, 100);
+
+            ctx.beginPath();
+            ctx.arc(getBallX(), getBallY(), 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            scoreDiv.textContent = `${getLeftScore()} - ${getRightScore()}`;
+          }
+
+          startButton.addEventListener("click", () => {
+            gameRunning = true;
+            startButton.style.display = "none";
+          });
+
+          gameLoop();
+        })
+        .catch((err) => {
+          console.error("Failed to load WebAssembly:", err);
+          document.body.innerHTML = `<div style="color: red">Error loading game: ${err}</div>`;
+        });
+    </script>
+  </body>
+</html>
+

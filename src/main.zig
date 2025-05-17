@@ -1,24 +1,79 @@
-const std = @import("std");
+const game = @import("game.zig");
 
-pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+var game_state: ?game.Game = null;
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
-
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
-
-    try bw.flush(); // don't forget to flush!
+export fn init(width: f32, height: f32) void {
+    game_state = game.Game.init(width, height);
 }
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+export fn update() void {
+    if (game_state) |*g| {
+        g.update();
+    }
+}
+
+export fn getLeftPaddleY() f32 {
+    if (game_state) |g| {
+        return g.left_paddle.y;
+    }
+    return 0;
+}
+
+export fn getRightPaddleY() f32 {
+    if (game_state) |g| {
+        return g.right_paddle.y;
+    }
+    return 0;
+}
+
+export fn getBallX() f32 {
+    if (game_state) |g| {
+        return g.ball.x;
+    }
+    return 0;
+}
+
+export fn getBallY() f32 {
+    if (game_state) |g| {
+        return g.ball.y;
+    }
+    return 0;
+}
+
+export fn getLeftScore() u32 {
+    if (game_state) |g| {
+        return g.left_paddle.score;
+    }
+    return 0;
+}
+
+export fn getRightScore() u32 {
+    if (game_state) |g| {
+        return g.right_paddle.score;
+    }
+    return 0;
+}
+
+export fn moveLeftPaddleUp() void {
+    if (game_state) |*g| {
+        g.left_paddle.moveUp();
+    }
+}
+
+export fn moveLeftPaddleDown() void {
+    if (game_state) |*g| {
+        g.left_paddle.moveDown(g.canvas_height);
+    }
+}
+
+export fn moveRightPaddleUp() void {
+    if (game_state) |*g| {
+        g.right_paddle.moveUp();
+    }
+}
+
+export fn moveRightPaddleDown() void {
+    if (game_state) |*g| {
+        g.right_paddle.moveDown(g.canvas_height);
+    }
 }
