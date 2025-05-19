@@ -23,6 +23,12 @@
         top: 20px;
         font-size: 24px;
       }
+      #speed {
+        position: absolute;
+        top: 50px;
+        font-size: 18px;
+        color: #aaa;
+      }
       #controls {
         position: absolute;
         bottom: 20px;
@@ -48,6 +54,7 @@
   </head>
   <body>
     <div id="score">0 - 0</div>
+    <div id="speed">Speed: 0</div>
     <canvas id="gameCanvas" width="1200" height="800"></canvas>
     <button id="startButton">Start Game</button>
     <div id="controls">
@@ -72,6 +79,7 @@
             getBallY,
             getLeftScore,
             getRightScore,
+            getBallSpeed,
             moveLeftPaddleUp,
             moveLeftPaddleDown,
             moveRightPaddleUp,
@@ -128,6 +136,7 @@
             ctx.fill();
 
             scoreDiv.textContent = `${getLeftScore()} - ${getRightScore()}`;
+            document.getElementById("speed").textContent = `Speed: ${getBallSpeed().toFixed(1)}`;
           }
 
           startButton.addEventListener("click", () => {

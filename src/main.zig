@@ -54,6 +54,13 @@ export fn getRightScore() u32 {
     return 0;
 }
 
+export fn getBallSpeed() f32 {
+    if (game_state) |g| {
+        return @abs(g.ball.speed);
+    }
+    return 0;
+}
+
 export fn moveLeftPaddleUp() void {
     if (game_state) |*g| {
         g.left_paddle.moveUp();
