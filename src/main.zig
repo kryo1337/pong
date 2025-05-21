@@ -6,9 +6,39 @@ export fn init(width: f32, height: f32) void {
     game_state = game.Game.init(width, height);
 }
 
-export fn update() void {
+export fn restartGame(now: u64) callconv(.C) void {
     if (game_state) |*g| {
-        g.update();
+        g.reset();
+        g.startCountdown(now);
+    }
+}
+
+export fn startCountdown(now: u64) callconv(.C) void {
+    if (game_state) |*g| {
+        g.startCountdown(now);
+    }
+}
+
+export fn getCountdown(now: u64) callconv(.C) u64 {
+    if (game_state) |g| {
+        if (g.is_counting_down) {
+            const remaining = g.countdown_end_time - now;
+            return remaining;
+        }
+    }
+    return 0;
+}
+
+export fn isCountingDown() callconv(.C) bool {
+    if (game_state) |g| {
+        return g.is_counting_down;
+    }
+    return false;
+}
+
+export fn update(now: u64) callconv(.C) void {
+    if (game_state) |*g| {
+        g.update(now);
     }
 }
 

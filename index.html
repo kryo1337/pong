@@ -29,34 +29,57 @@
         font-size: 18px;
         color: #aaa;
       }
+      #countdown {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 72px;
+        color: white;
+        display: none;
+      }
       #controls {
         position: absolute;
         bottom: 20px;
         text-align: center;
       }
-      #startButton {
+      #startButton, #restartButton {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
         padding: 10px 20px;
         font-size: 20px;
-        background: #4caf50;
         color: white;
         border: none;
         border-radius: 5px;
         cursor: pointer;
       }
+      #startButton {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #4caf50;
+      }
+      #restartButton {
+        top: calc(50% + 60px);
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #f44336;
+        display: none;
+      }
       #startButton:hover {
         background: #45a049;
+      }
+      #restartButton:hover {
+        background: #da190b;
       }
     </style>
   </head>
   <body>
     <div id="score">0 - 0</div>
     <div id="speed">Speed: 0</div>
+    <div id="countdown">3</div>
     <canvas id="gameCanvas" width="1200" height="800"></canvas>
     <button id="startButton">Start Game</button>
+    <button id="restartButton">Restart Game</button>
     <div id="controls">
       Left Player: W (up) and S (down)<br />
       Right Player: Arrow Up and Arrow Down
@@ -66,10 +89,13 @@
       const ctx = canvas.getContext("2d");
       const scoreDiv = document.getElementById("score");
       const startButton = document.getElementById("startButton");
+      const restartButton = document.getElementById("restartButton");
       let gameRunning = false;
+      let wasmExports = null;
 
       WebAssembly.instantiateStreaming(fetch("pong.wasm"), {})
         .then((obj) => {
+          wasmExports = obj.instance.exports;
           const {
             init,
             update,
@@ -84,7 +110,11 @@
             moveLeftPaddleDown,
             moveRightPaddleUp,
             moveRightPaddleDown,
-          } = obj.instance.exports;
+            restartGame,
+            startCountdown,
+            getCountdown,
+            isCountingDown,
+          } = wasmExports;
 
           init(canvas.width, canvas.height);
 
@@ -93,6 +123,7 @@
             if (e.key === "Escape") {
               gameRunning = !gameRunning;
               startButton.style.display = gameRunning ? "none" : "block";
+              restartButton.style.display = gameRunning ? "none" : "block";
               startButton.textContent = gameRunning ? "Start Game" : "Resume Game";
               return;
             }
@@ -103,9 +134,12 @@
             keys.delete(e.key);
           });
 
+          const countdownDiv = document.getElementById("countdown");
+
           function gameLoop() {
             if (gameRunning) {
-              update();
+              const now = BigInt(Date.now());
+              update(now);
               if (keys.has("w")) moveLeftPaddleUp();
               if (keys.has("s")) moveLeftPaddleDown();
               if (keys.has("ArrowUp")) moveRightPaddleUp();
@@ -118,7 +152,15 @@
           function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw center line
+            const now = BigInt(Date.now());
+            if (isCountingDown()) {
+              const count = Math.ceil(Number(getCountdown(now)) / 1000);
+              countdownDiv.textContent = count.toString();
+              countdownDiv.style.display = "block";
+            } else {
+              countdownDiv.style.display = "none";
+            }
+
             ctx.setLineDash([10, 10]);
             ctx.beginPath();
             ctx.moveTo(canvas.width / 2, 0);
@@ -140,8 +182,17 @@
           }
 
           startButton.addEventListener("click", () => {
+            startCountdown(BigInt(Date.now()));
             gameRunning = true;
             startButton.style.display = "none";
+            restartButton.style.display = "none";
+          });
+
+          restartButton.addEventListener("click", () => {
+            restartGame(BigInt(Date.now()));
+            gameRunning = true;
+            startButton.style.display = "none";
+            restartButton.style.display = "none";
           });
 
           gameLoop();

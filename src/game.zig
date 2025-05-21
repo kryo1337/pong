@@ -35,7 +35,7 @@ pub const Ball = struct {
     fn getRandomAngle(self: *Ball) f32 {
         const angle = @as(f32, @floatFromInt(self.random_seed % 200)) / 100.0 - 1.0;
         self.random_seed = self.random_seed *% 1103515245 +% 12345;
-        return angle * 0.1; // Reduced to 0.1 for more subtle variation
+        return angle * 0.1;
     }
 
     pub fn update(self: *Ball, canvas_height: f32) void {
@@ -70,6 +70,8 @@ pub const Game = struct {
     canvas_height: f32,
     last_scorer: enum { left, right, none } = .none,
     current_frame: u32 = 0,
+    countdown_end_time: u64 = 0,
+    is_counting_down: bool = false,
 
     pub fn init(canvas_width: f32, canvas_height: f32) Game {
         var ball = Ball{
@@ -93,14 +95,37 @@ pub const Game = struct {
             .canvas_height = canvas_height,
             .last_scorer = .none,
             .current_frame = 0,
+            .countdown_end_time = 0,
+            .is_counting_down = false,
         };
     }
 
-    pub fn update(self: *Game) void {
+    pub fn startCountdown(self: *Game, now: u64) void {
+        self.is_counting_down = true;
+        self.countdown_end_time = now + 2000;
+    }
+
+    pub fn reset(self: *Game) void {
+        self.ball.reset(self.canvas_width, self.canvas_height, true);
+        self.left_paddle.y = self.canvas_height / 2 - 50;
+        self.right_paddle.y = self.canvas_height / 2 - 50;
+        self.left_paddle.score = 0;
+        self.right_paddle.score = 0;
+        self.current_frame = 0;
+    }
+
+    pub fn update(self: *Game, now: u64) void {
         self.current_frame += 1;
+
+        if (self.is_counting_down) {
+            if (now < self.countdown_end_time) {
+                return;
+            }
+            self.is_counting_down = false;
+        }
+
         self.ball.update(self.canvas_height);
 
-        // Left paddle collision
         if (self.ball.direction_x < 0 and
             self.ball.x - self.ball.radius <= self.left_paddle.x + self.left_paddle.width and
             self.ball.x - self.ball.radius >= self.left_paddle.x - self.ball.radius and
@@ -111,7 +136,6 @@ pub const Game = struct {
             self.ball.speed = @min(self.ball.speed + self.ball.speed_increase, self.ball.max_speed);
             self.ball.direction_x = 1.0;
             self.ball.direction_y += self.ball.getRandomAngle();
-            // Normalize direction to maintain speed
             const length = @sqrt(self.ball.direction_x * self.ball.direction_x + self.ball.direction_y * self.ball.direction_y);
             self.ball.direction_x /= length;
             self.ball.direction_y /= length;
@@ -119,7 +143,6 @@ pub const Game = struct {
             self.ball.last_hit_frame = self.current_frame;
         }
 
-        // Right paddle collision
         if (self.ball.direction_x > 0 and
             self.ball.x + self.ball.radius >= self.right_paddle.x and
             self.ball.x + self.ball.radius <= self.right_paddle.x + self.right_paddle.width + self.ball.radius and
@@ -130,7 +153,6 @@ pub const Game = struct {
             self.ball.speed = @min(self.ball.speed + self.ball.speed_increase, self.ball.max_speed);
             self.ball.direction_x = -1.0;
             self.ball.direction_y += self.ball.getRandomAngle();
-            // Normalize direction to maintain speed
             const length = @sqrt(self.ball.direction_x * self.ball.direction_x + self.ball.direction_y * self.ball.direction_y);
             self.ball.direction_x /= length;
             self.ball.direction_y /= length;
